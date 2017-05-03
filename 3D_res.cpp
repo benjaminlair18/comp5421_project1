@@ -97,8 +97,8 @@ void fundaemtaleachpair(string s1, string s2)
   Ptr<SIFT> detector2 = SIFT::create();
   std::vector<KeyPoint> sift_keypoints_1, sift_keypoints_2;
   Mat sift_descriptors_1, sift_descriptors_2;
-  detector2->detectAndCompute( img_1, Mat(), sift_keypoints_1, sift_descriptors_1 );
-  detector2->detectAndCompute( img_2, Mat(), sift_keypoints_2, sift_descriptors_2 );
+  detector->detectAndCompute( img_1, Mat(), sift_keypoints_1, sift_descriptors_1 );
+  detector->detectAndCompute( img_2, Mat(), sift_keypoints_2, sift_descriptors_2 );
   cout<<"Using SIFT"<<endl;
   cout<<"Press any button on imshow window to proceed"<<endl<<endl;
   show_keypoints("sift ", img_1, sift_keypoints_1, img_2, sift_keypoints_2 );
@@ -142,7 +142,7 @@ void fundaemtaleachpair(string s1, string s2)
   show_matches("surf inliner matches", img_1, keypoints_1, img_2, keypoints_2, Gmatches2 );
 
   //as the feature point maybe less, just some checking to decide use which Dmatch
-  if(Gmatches2.size() < 50)
+  if(Gmatches2.size() < 30)
   {
     Gmatches = Gmatches1;
   }
@@ -153,8 +153,8 @@ void fundaemtaleachpair(string s1, string s2)
   //show 15 points for drawEpipolarLines
 
   cout<<endl<<" ---Task 1.3. Epipolar Geometry---"<<endl;
-  int size_goodpoint = 15;
-  if( Gmatches.size() < 15 )
+  int size_goodpoint = 30;
+  if( Gmatches.size() < 30 )
   {
     size_goodpoint = Gmatches.size();
   }
@@ -193,21 +193,18 @@ void fundaemtaleachpair(string s1, string s2)
   // cout<<p1<<endl<<endl;
   // cout<<p2<<endl<<endl;
 
-  //Using Opencv Library to check value
-  // Mat  m_Fundamental = findFundamentalMat(p1, p2, FM_8POINT);
-  // cout<<m_Fundamental<<endl;
-
   Mat m_Fundamental =findFundamental(p1, p2,size_goodpoint);
   cout<<"the fundamental matrix calculated:  "<<endl<<m_Fundamental<<endl;
 
   Mat m_Fundamental2 =findFundamental(p1.rowRange(0,7), p2.rowRange(0,7),7);
-  // Mat R,T;
-  // rotation(m_Fundamental,R,T);
+
   string f2 = "EpipolarLines";
   cout<<"using my own fundamental matrix to draw Epipolar Lines"<<endl<<endl;
   cout<<"Press any button on imshow window to proceed"<<endl<<endl;
- // drawEpipolarLines(f2, m_Fundamental, img_1,img_2, po1, po2, 0);
 
+  
+  drawEpipolarLines(f2, m_Fundamental, img_1,img_2, po1, po2, 0);
+  waitKey(0);
 
   cout<<endl<<" ---Task 1.4. Sparse 3D Points (Two-view Triangulation)---"<<endl;
   string file = i1+"vs"+i2+".ply";
@@ -218,7 +215,7 @@ void fundaemtaleachpair(string s1, string s2)
 
 }
 
-void fundaemtaleachpairall(string s1, string s2)
+Mat fundaemtaleachpairall(string s1, string s2)
 { 
   
   string i1 = s1;
@@ -310,6 +307,8 @@ void fundaemtaleachpairall(string s1, string s2)
   cout<<"the correspond ply file is generated"<<endl<<endl;
   cout<<"The name is: "<<file<<endl;
 
+  return m_Fundamental;
+
 }
 
 int main( int argc, char** argv )
@@ -322,7 +321,7 @@ int main( int argc, char** argv )
   cout<<"example: 0000 0001   ...  or 0004 0005"<<endl;
 
     cout<<endl<<"another input type is: 'all''" <<endl;
-cout<<"when input 'all' for first input, it will proceed to task 2 :)"<<endl;
+  cout<<"when input 'all' for first input, it will proceed to task 2 :)"<<endl;
   string s1,s2;
   cout<<"input the first image:"<<endl;
   getline(cin, s1);
@@ -332,7 +331,8 @@ cout<<"when input 'all' for first input, it will proceed to task 2 :)"<<endl;
 
   if((s1 == "all"))
   {   
-     cout<<"now doing "<<endl;
+      Mat F[10];
+      cout<<"now doing "<<endl;
       string input[11] = {"0000",
                           "0001",
                           "0002",
@@ -346,7 +346,11 @@ cout<<"when input 'all' for first input, it will proceed to task 2 :)"<<endl;
       for(int i = 0; i<10; i++)
       {
             cout<<"now doing "<<input[i]<<" "<<input[i+1]<<" image pair"<<endl;
-            fundaemtaleachpairall(input[i], input[i+1]);
+            std::cout.setstate(std::ios_base::failbit);
+
+            F[i] =  fundaemtaleachpairall(input[i], input[i+1]);
+            std::cout.clear();
+            cout<<"fundamental Matrix of "<<input[i]<<" and "<<input[i+1]<<endl<<F[i]<<endl;
       }
   }
   else{
@@ -354,17 +358,14 @@ cout<<"when input 'all' for first input, it will proceed to task 2 :)"<<endl;
       Mat img_2 = imread( s2+".png", IMREAD_GRAYSCALE );
       if( !img_1.data || !img_2.data )
       {
-         cout<<"opps, cannot find these images wor, check the input again?!"<<endl;
-         return -1; 
+          cout<<"opps, cannot find these images wor, check the input again?!"<<endl;
+          return -1; 
       }
 
       fundaemtaleachpair(s1, s2);
 
   }
 
-
-
-  return 0;
 }
 
 void show_matches(String title, Mat img_1, std::vector<KeyPoint> keypoints_1, Mat img_2,std::vector<KeyPoint> keypoints_2,  std::vector< DMatch > Gmatches)
