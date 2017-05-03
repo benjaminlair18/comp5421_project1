@@ -16,6 +16,8 @@ using namespace std;
 using namespace cv;
 using namespace cv::xfeatures2d;
 
+int rr1 = 0;
+
 #define use_SIFT 0
 void rotation(Mat F,Mat &R,Mat &T,int r1);
 
@@ -67,7 +69,7 @@ void fundaemtaleachpair(string s1, string s2)
   //   Compute the corresponding descriptors and visualize the features
   //-- Step 1: Detect the keypoints using SURF Detector, compute the descriptors
     cout<<endl<<" ---Task 1.1.Feature Detection---"<<endl;
-  ////Hessian matrix describes the second derivatives of a function
+  // //Hessian matrix describes the second derivatives of a function
   //  the product of eigenvalues is the determinant of Hessian. 
   //  minHessian here could be consider as
   //   that determinant, which is how "sharp" the extrema you need.
@@ -93,16 +95,18 @@ void fundaemtaleachpair(string s1, string s2)
   cout<<"Using SURF"<<endl;  
   cout<<"Press any button on imshow window to proceed"<<endl<<endl;
   show_keypoints("surf ", img_1, surf_keypoints_1, img_2, surf_keypoints_2 );
-
+  cout << "Image1 = "<< endl << " "  << surf_descriptors_1.size() << endl << endl;
+  cout << "Image2 = "<< endl << " "  << surf_descriptors_2.size() << endl << endl;
   Ptr<SIFT> detector2 = SIFT::create();
   std::vector<KeyPoint> sift_keypoints_1, sift_keypoints_2;
   Mat sift_descriptors_1, sift_descriptors_2;
-  detector->detectAndCompute( img_1, Mat(), sift_keypoints_1, sift_descriptors_1 );
-  detector->detectAndCompute( img_2, Mat(), sift_keypoints_2, sift_descriptors_2 );
+  detector2->detectAndCompute( img_1, Mat(), sift_keypoints_1, sift_descriptors_1 );
+  detector2->detectAndCompute( img_2, Mat(), sift_keypoints_2, sift_descriptors_2 );
   cout<<"Using SIFT"<<endl;
   cout<<"Press any button on imshow window to proceed"<<endl<<endl;
   show_keypoints("sift ", img_1, sift_keypoints_1, img_2, sift_keypoints_2 );
-  
+  cout << "Image1 = "<< endl << " "  << sift_descriptors_1.size() << endl << endl;
+  cout << "Image2 = "<< endl << " "  << sift_descriptors_2.size() << endl << endl;
   std::vector<KeyPoint> keypoints_1, keypoints_2;
   Mat descriptors_1, descriptors_2;
   //-- Step 2: Matching descriptor vectors with a brute force matcher
@@ -192,7 +196,8 @@ void fundaemtaleachpair(string s1, string s2)
   }
   // cout<<p1<<endl<<endl;
   // cout<<p2<<endl<<endl;
-
+  //   Mat  m_Fundamental3 = findFundamentalMat(p1, p2, FM_8POINT);
+  // cout<<m_Fundamental3<<endl;
   Mat m_Fundamental =findFundamental(p1, p2,size_goodpoint);
   cout<<"the fundamental matrix calculated:  "<<endl<<m_Fundamental<<endl;
 
@@ -332,6 +337,8 @@ int main( int argc, char** argv )
   if((s1 == "all"))
   {   
       Mat F[10];
+      Mat R[10];
+      Mat T[10];
       cout<<"now doing "<<endl;
       string input[11] = {"0000",
                           "0001",
@@ -347,10 +354,13 @@ int main( int argc, char** argv )
       {
             cout<<"now doing "<<input[i]<<" "<<input[i+1]<<" image pair"<<endl;
             std::cout.setstate(std::ios_base::failbit);
-
+            //get all fundamental matrix
             F[i] =  fundaemtaleachpairall(input[i], input[i+1]);
+            //from the fundamental matrix, get rotation and translation
+            rotation(F[i],R[i],T[i],rr1);
             std::cout.clear();
             cout<<"fundamental Matrix of "<<input[i]<<" and "<<input[i+1]<<endl<<F[i]<<endl;
+
       }
   }
   else{
@@ -387,8 +397,8 @@ void show_keypoints(String title, Mat img_1, std::vector<KeyPoint> keypoints_1, 
   string title1 = title;
   string title2 = title;
   Mat img_keypoints_1; Mat img_keypoints_2;
-  drawKeypoints( img_1, keypoints_1, img_keypoints_1, Scalar::all(-1), DrawMatchesFlags::DEFAULT );
-  drawKeypoints( img_2, keypoints_2, img_keypoints_2, Scalar::all(-1), DrawMatchesFlags::DEFAULT );
+  drawKeypoints( img_1, keypoints_1, img_keypoints_1, Scalar::all(-1), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+  drawKeypoints( img_2, keypoints_2, img_keypoints_2, Scalar::all(-1), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
 
   title1.append("Keypoints 1");
   title2.append("Keypoints 2");
@@ -456,6 +466,7 @@ void PLYfrom2D( String file,
                 vector<DMatch> m_Matches
 )
 {
+            rr1 = 0;
   std::vector< DMatch > good_matches;
   int ptCount = (int)m_Matches.size();
   Mat p1(ptCount, 2, CV_32F);
@@ -550,6 +561,7 @@ void PLYfrom2D( String file,
       {   
           cout<<"find new"<<endl;
           rotation(m_Fundamental,R,T,1);
+          rr1 = 1;
           cv::hconcat(R, T, R);
           Mat P2 = cameraMatrix()*R;
           triangulatePoints(P, P2,m_LeftInlier, m_RightInlier, pnts4D );
