@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 2.8)
+project( 3D_res )
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+add_executable( 3D_res 3D_res.cpp )
+target_link_libraries( 3D_res ${OpenCV_LIBS} )
